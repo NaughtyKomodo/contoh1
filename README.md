@@ -14,7 +14,7 @@ Perancangan basis data logis sistem perpustakaan mengadopsi model relasional den
 2. **Penerbit (`penerbit`)**: Entitas master yang mengelola informasi badan usaha atau lembaga yang menerbitkan karya literatur/buku.
 3. **Buku (`buku`)**: Entitas master katalog literatur yang mencakup metadata bibliografi, identitas buku, serta kapasitas inventaris fisik (stok).
 4. **Peminjaman (`peminjaman`)**: Entitas transaksi (*Header/Master Transaction*) yang merekam satu sesi peminjaman oleh seorang mahasiswa pada waktu tertentu.
-5. **Detail Peminjaman (`detail_peminjaman`)**: Entitas asosiatif/transaksi (*Detail/Line Item Transaction*) yang menyelesaikan dekomposisi relasi *Many-to-Many* ($M : N$) antara entitas `peminjaman` dan `buku`. Entitas ini melacak status individual tiap eksemplar buku, waktu pengembalian riil, serta kalkulasi sanksi denda keterlambatan.
+5. **Detail Peminjaman (`detail_peminjaman`)**: Entitas asosiatif/transaksi (*Detail/Line Item Transaction*) yang menyelesaikan dekomposisi relasi *Many-to-Many* (1:N dan M:N) antara entitas `peminjaman` dan `buku`. Entitas ini melacak status individual tiap eksemplar buku, waktu pengembalian riil, serta kalkulasi sanksi denda keterlambatan.
 
 ---
 
@@ -22,10 +22,10 @@ Perancangan basis data logis sistem perpustakaan mengadopsi model relasional den
 
 | No | Entitas Asal | Hubungan | Entitas Tujuan | Kardinalitas | Partisipasi (Modality) | Deskripsi Semantik Bisnis |
 | :---: | :--- | :---: | :--- | :---: | :---: | :--- |
-| **1** | `penerbit` | *menerbitkan* | `buku` | **$1 : N$ (One-to-Many)** | Mandatory ke Optional | Satu penerbit dapat menerbitkan banyak judul buku ($0..N$). Setiap buku wajib diterbitkan oleh tepat satu penerbit ($1..1$). |
-| **2** | `mahasiswa` | *melakukan* | `peminjaman` | **$1 : N$ (One-to-Many)** | Optional ke Mandatory | Satu mahasiswa dapat memiliki 0 atau banyak riwayat transaksi peminjaman ($0..N$). Setiap transaksi peminjaman wajib dimiliki oleh tepat satu mahasiswa ($1..1$). |
-| **3** | `peminjaman` | *memuat* | `detail_peminjaman` | **$1 : N$ (One-to-Many)** | Mandatory ke Mandatory | Satu nota transaksi peminjaman wajib memuat minimal 1 atau beberapa eksemplar buku ($1..N$). Setiap record detail merujuk pada tepat satu nota peminjaman induk ($1..1$). |
-| **4** | `buku` | *dicatat pada* | `detail_peminjaman` | **$1 : N$ (One-to-Many)** | Optional ke Mandatory | Satu judul buku dapat dipinjam berkali-kali pada transaksi berbeda ($0..N$). Setiap entri detail wajib mereferensikan satu katalog buku tertentu ($1..1$). |
+| **1** | `penerbit` | *menerbitkan* | `buku` | **1 : N (One-to-Many)** | Mandatory ke Optional | Satu penerbit dapat menerbitkan banyak judul buku (0..N). Setiap buku wajib diterbitkan oleh tepat satu penerbit (1..1). |
+| **2** | `mahasiswa` | *melakukan* | `peminjaman` | **1 : N (One-to-Many)** | Optional ke Mandatory | Satu mahasiswa dapat memiliki 0 atau banyak riwayat transaksi peminjaman (0..N). Setiap transaksi peminjaman wajib dimiliki oleh tepat satu mahasiswa (1..1). |
+| **3** | `peminjaman` | *memuat* | `detail_peminjaman` | **1 : N (One-to-Many)** | Mandatory ke Mandatory | Satu nota transaksi peminjaman wajib memuat minimal 1 atau beberapa eksemplar buku (1..N). Setiap record detail merujuk pada tepat satu nota peminjaman induk (1..1). |
+| **4** | `buku` | *dicatat pada* | `detail_peminjaman` | **1 : N (One-to-Many)** | Optional ke Mandatory | Satu judul buku dapat dipinjam berkali-kali pada transaksi berbeda (0..N). Setiap entri detail wajib mereferensikan satu katalog buku tertentu (1..1). |
 
 ---
 
@@ -55,7 +55,7 @@ Pemberian skema atribut disusun menggunakan konvensi penamaan standar database r
 * **Deskripsi**: Menyimpan katalog master pustaka buku.
 * **Atribut**:
   - `id_buku` (**Primary Key**): Kode identifikasi buku / barcode / ISBN unik.
-  - `id_penerbit` (**Foreign Key** $\to$ `penerbit.id_penerbit`): Kunci relasi ke tabel penerbit.
+  - `id_penerbit` (**Foreign Key** merujuk ke `penerbit.id_penerbit`): Kunci relasi ke tabel penerbit.
   - `judul_buku`: Judul literatur / buku lengkap.
   - `tahun_terbit`: Tahun publikasi edisi buku.
   - `stok`: Jumlah kuantitas eksemplar fisik yang tersedia di perpustakaan.
@@ -64,15 +64,15 @@ Pemberian skema atribut disusun menggunakan konvensi penamaan standar database r
 * **Deskripsi**: Menyimpan informasi umum faktur / nota peminjaman (*Header Transaction*).
 * **Atribut**:
   - `id_peminjaman` (**Primary Key**): Nomor registrasi transaksi peminjaman (misal: `TRX-2026-0001`).
-  - `nim` (**Foreign Key** $\to$ `mahasiswa.nim`): Kunci relasi mahasiswa peminjam.
+  - `nim` (**Foreign Key** merujuk ke `mahasiswa.nim`): Kunci relasi mahasiswa peminjam.
   - `tgl_pinjam`: Tanggal efektif peminjaman dilakukan.
   - `tgl_jatuh_tempo`: Batas waktu tanggal pengembalian buku yang disepakati.
 
 ### 2.5 Entitas: `detail_peminjaman`
 * **Deskripsi**: Menyimpan item detail buku yang dipinjam serta melacak status pengembalian (*Line Item Transaction*).
 * **Atribut**:
-  - `id_peminjaman` (**Composite Primary Key**, **Foreign Key** $\to$ `peminjaman.id_peminjaman`): Referensi transaksi induk.
-  - `id_buku` (**Composite Primary Key**, **Foreign Key** $\to$ `buku.id_buku`): Referensi katalog buku yang dipinjam.
+  - `id_peminjaman` (**Composite Primary Key**, **Foreign Key** merujuk ke `peminjaman.id_peminjaman`): Referensi transaksi induk.
+  - `id_buku` (**Composite Primary Key**, **Foreign Key** merujuk ke `buku.id_buku`): Referensi katalog buku yang dipinjam.
   - `tgl_kembali`: Tanggal riil buku dikembalikan secara fisik (bernilai `NULL` selama status buku masih dipinjam).
   - `denda`: Nominal denda finansial yang dihitung jika `tgl_kembali > tgl_jatuh_tempo` (default `0.00`).
 
@@ -87,9 +87,12 @@ Proses normalisasi dilakukan secara formal dari *Unnormalized Form* (UNF) hingga
 ---
 
 ### 3.1 Unnormalized Form (UNF)
-Kondisi data mentah (*flat file*) yang merekam transaksi dalam dokumen fisik/formulir peminjaman. Terdapat kelompok data yang berulang (*repeating groups*) pada atribut buku yang dipinjam per transaksi.
+Kondisi data mentah (*flat file*) yang merekam transaksi dalam dokumen fisik/formulir peminjaman. Terdapat kelompok data yang berulang (*repeating groups*) pada atribut buku yang dipinjam per transaksi:
 
-$$\text{UNF} = (\underline{\text{id\_peminjaman}}, \text{tgl\_pinjam}, \text{tgl\_jatuh\_tempo}, \text{nim}, \text{nama\_mahasiswa}, \text{jurusan}, \text{no\_telepon}, \{ \text{id\_buku}, \text{judul\_buku}, \text{tahun\_terbit}, \text{stok}, \text{id\_penerbit}, \text{nama\_penerbit}, \text{alamat\_penerbit}, \text{email\_penerbit}, \text{tgl\_kembali}, \text{denda} \})$$
+```text
+(id_peminjaman, tgl_pinjam, tgl_jatuh_tempo, nim, nama_mahasiswa, jurusan, no_telepon,
+ {id_buku, judul_buku, tahun_terbit, stok, id_penerbit, nama_penerbit, alamat_penerbit, email_penerbit, tgl_kembali, denda})
+```
 
 ---
 
@@ -97,7 +100,11 @@ $$\text{UNF} = (\underline{\text{id\_peminjaman}}, \text{tgl\_pinjam}, \text{tgl
 * **Syarat**: Setiap atribut harus bernilai atomik (tunggal, tidak dapat dipecah lagi), tidak ada duplikasi baris, dan menghilangkan *repeating groups*.
 * **Tindakan**: Mendekomposisi kelompok berulang dengan membentuk **Composite Primary Key** dari `id_peminjaman` dan `id_buku`.
 
-$$\text{Skema 1NF} = (\underline{\text{id\_peminjaman}}^*, \underline{\text{id\_buku}}^*, \text{tgl\_pinjam}, \text{tgl\_jatuh\_tempo}, \text{nim}, \text{nama\_mahasiswa}, \text{jurusan}, \text{no\_telepon}, \text{judul\_buku}, \text{tahun\_terbit}, \text{stok}, \text{id\_penerbit}, \text{nama\_penerbit}, \text{alamat\_penerbit}, \text{email\_penerbit}, \text{tgl\_kembali}, \text{denda})$$
+```text
+(id_peminjaman*, id_buku*, tgl_pinjam, tgl_jatuh_tempo, nim, nama_mahasiswa, jurusan, 
+ no_telepon, judul_buku, tahun_terbit, stok, id_penerbit, nama_penerbit, alamat_penerbit, 
+ email_penerbit, tgl_kembali, denda)
+```
 
 ---
 
@@ -106,16 +113,16 @@ $$\text{Skema 1NF} = (\underline{\text{id\_peminjaman}}^*, \underline{\text{id\_
 
 **Analisis Ketergantungan Fungsional (Functional Dependency Analysis):**
 1. **Parsial ke `id_peminjaman`**:
-   $$\text{id\_peminjaman} \to \text{tgl\_pinjam}, \text{tgl\_jatuh\_tempo}, \text{nim}, \text{nama\_mahasiswa}, \text{jurusan}, \text{no\_telepon}$$
+   `id_peminjaman` $\to$ `tgl_pinjam`, `tgl_jatuh_tempo`, `nim`, `nama_mahasiswa`, `jurusan`, `no_telepon`
 2. **Parsial ke `id_buku`**:
-   $$\text{id\_buku} \to \text{judul\_buku}, \text{tahun\_terbit}, \text{stok}, \text{id\_penerbit}, \text{nama\_penerbit}, \text{alamat\_penerbit}, \text{email\_penerbit}$$
+   `id_buku` $\to$ `judul_buku`, `tahun_terbit`, `stok`, `id_penerbit`, `nama_penerbit`, `alamat_penerbit`, `email_penerbit`
 3. **Penuh (*Full Dependency*) ke `(id_peminjaman, id_buku)`**:
-   $$(\text{id\_peminjaman}, \text{id\_buku}) \to \text{tgl\_kembali}, \text{denda}$$
+   (`id_peminjaman`, `id_buku`) $\to$ `tgl_kembali`, `denda`
 
 **Relasi Hasil Dekomposisi 2NF:**
-* `Peminjaman_Header` $(\underline{\text{id\_peminjaman}}^*, \text{tgl\_pinjam}, \text{tgl\_jatuh\_tempo}, \text{nim}, \text{nama\_mahasiswa}, \text{jurusan}, \text{no\_telepon})$
-* `Buku_Master` $(\underline{\text{id\_buku}}^*, \text{judul\_buku}, \text{tahun\_terbit}, \text{stok}, \text{id\_penerbit}, \text{nama\_penerbit}, \text{alamat\_penerbit}, \text{email\_penerbit})$
-* `Detail_Peminjaman` $(\underline{\text{id\_peminjaman}}^{**}, \underline{\text{id\_buku}}^{**}, \text{tgl\_kembali}, \text{denda})$
+* `Peminjaman_Header` (`id_peminjaman`*, `tgl_pinjam`, `tgl_jatuh_tempo`, `nim`, `nama_mahasiswa`, `jurusan`, `no_telepon`)
+* `Buku_Master` (`id_buku`*, `judul_buku`, `tahun_terbit`, `stok`, `id_penerbit`, `nama_penerbit`, `alamat_penerbit`, `email_penerbit`)
+* `Detail_Peminjaman` (`id_peminjaman`**, `id_buku`**, `tgl_kembali`, `denda`)
 
 ---
 
@@ -124,21 +131,21 @@ $$\text{Skema 1NF} = (\underline{\text{id\_peminjaman}}^*, \underline{\text{id\_
 
 **Identifikasi Ketergantungan Transitif:**
 1. Pada `Peminjaman_Header`:
-   $$\text{id\_peminjaman} \to \text{nim} \to (\text{nama\_mahasiswa}, \text{jurusan}, \text{no\_telepon})$$
+   `id_peminjaman` $\to$ `nim` $\to$ (`nama_mahasiswa`, `jurusan`, `no_telepon`)
    *Atribut identitas mahasiswa bergantung pada `nim`, bukan langsung pada `id_peminjaman`.*
    $\to$ **Solusi**: Pisahkan ke tabel master **`mahasiswa`** dan sisakan `nim` sebagai Foreign Key di tabel `peminjaman`.
 
 2. Pada `Buku_Master`:
-   $$\text{id\_buku} \to \text{id\_penerbit} \to (\text{nama\_penerbit}, \text{alamat\_penerbit}, \text{email\_penerbit})$$
+   `id_buku` $\to$ `id_penerbit` $\to$ (`nama_penerbit`, `alamat_penerbit`, `email_penerbit`)
    *Atribut profil penerbit bergantung pada `id_penerbit`, bukan langsung pada `id_buku`.*
    $\to$ **Solusi**: Pisahkan ke tabel master **`penerbit`** dan sisakan `id_penerbit` sebagai Foreign Key di tabel `buku`.
 
 **Skema Relasi Akhir Hasil 3NF (Optimum):**
-1. **`mahasiswa`** $(\underline{\text{nim}}^*, \text{nama\_mahasiswa}, \text{jurusan}, \text{no\_telepon})$
-2. **`penerbit`** $(\underline{\text{id\_penerbit}}^*, \text{nama\_penerbit}, \text{alamat\_penerbit}, \text{email\_penerbit})$
-3. **`buku`** $(\underline{\text{id\_buku}}^*, \text{judul\_buku}, \text{tahun\_terbit}, \text{stok}, \text{id\_penerbit}^{**})$
-4. **`peminjaman`** $(\underline{\text{id\_peminjaman}}^*, \text{nim}^{**}, \text{tgl\_pinjam}, \text{tgl\_jatuh\_tempo})$
-5. **`detail_peminjaman`** $(\underline{\text{id\_peminjaman}}^{**}, \underline{\text{id\_buku}}^{**}, \text{tgl\_kembali}, \text{denda})$
+1. **`mahasiswa`**: (`nim`*, `nama_mahasiswa`, `jurusan`, `no_telepon`)
+2. **`penerbit`**: (`id_penerbit`*, `nama_penerbit`, `alamat_penerbit`, `email_penerbit`)
+3. **`buku`**: (`id_buku`*, `judul_buku`, `tahun_terbit`, `stok`, `id_penerbit`**)
+4. **`peminjaman`**: (`id_peminjaman`*, `nim`**, `tgl_pinjam`, `tgl_jatuh_tempo`)
+5. **`detail_peminjaman`**: (`id_peminjaman`**, `id_buku`**, `tgl_kembali`, `denda`)
 
 ---
 
@@ -174,7 +181,7 @@ $$\text{Skema 1NF} = (\underline{\text{id\_peminjaman}}^*, \underline{\text{id\_
 
 ### 4.3 Tabel: `buku`
 * **Primary Key**: `id_buku`
-* **Foreign Key**: `id_penerbit` $\to$ `penerbit(id_penerbit)`
+* **Foreign Key**: `id_penerbit` merujuk ke `penerbit(id_penerbit)`
 
 | Nama Kolom | Tipe Data | Nullability | Default | Constraint / Indeks | Deskripsi & Aturan Bisnis |
 | :--- | :--- | :---: | :---: | :--- | :--- |
@@ -188,7 +195,7 @@ $$\text{Skema 1NF} = (\underline{\text{id\_peminjaman}}^*, \underline{\text{id\_
 
 ### 4.4 Tabel: `peminjaman`
 * **Primary Key**: `id_peminjaman`
-* **Foreign Key**: `nim` $\to$ `mahasiswa(nim)`
+* **Foreign Key**: `nim` merujuk ke `mahasiswa(nim)`
 
 | Nama Kolom | Tipe Data | Nullability | Default | Constraint / Indeks | Deskripsi & Aturan Bisnis |
 | :--- | :--- | :---: | :---: | :--- | :--- |
@@ -202,8 +209,8 @@ $$\text{Skema 1NF} = (\underline{\text{id\_peminjaman}}^*, \underline{\text{id\_
 ### 4.5 Tabel: `detail_peminjaman`
 * **Primary Key**: Composite `(id_peminjaman, id_buku)`
 * **Foreign Key**: 
-  - `id_peminjaman` $\to$ `peminjaman(id_peminjaman)`
-  - `id_buku` $\to$ `buku(id_buku)`
+  - `id_peminjaman` merujuk ke `peminjaman(id_peminjaman)`
+  - `id_buku` merujuk ke `buku(id_buku)`
 
 | Nama Kolom | Tipe Data | Nullability | Default | Constraint / Indeks | Deskripsi & Aturan Bisnis |
 | :--- | :--- | :---: | :---: | :--- | :--- |
